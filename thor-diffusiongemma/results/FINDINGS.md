@@ -29,4 +29,13 @@ system prompt + tool defs, the prefill saving would be material; this micro-benc
 => thinking=false saves ~1.4s on short tool/factual turns. Route those with enable_thinking=false.
 reasoning_content not separated by gemma4 parser (reasoning_words=0) but thinking still costs tokens.
 
-## Phase 3 (expert requant) — see separate note; high risk, DiffusionGemmaForBlockDiffusion is not a CausalLM.
+## Phase 3 (expert requant) — INFEASIBLE as written (verified)
+The FP4-experts bandwidth lever is real (NVFP4 checkpoint keeps mlp/router/self_attn in bf16),
+but llm-compressor cannot reach it: it wraps AutoModelForCausalLM, and
+`AutoModelForCausalLM.from_pretrained('/model')` fails with:
+  ValueError: model type `diffusion_gemma` ... Transformers does not recognize this architecture.
+The DiffusionGemma model code lives in the vLLM image (not as a transformers trust_remote_code
+class); config has architectures=['DiffusionGemmaForBlockDiffusion'], auto_map=NONE, modelopt-packed
+weights. So requantizing experts requires a modelopt-based flow against the vLLM model definition
+(a research effort), not this llm-compressor script. Did NOT run the install/quant (would fail at load).
+Bandwidth lever remains open but out of reach with off-the-shelf tooling.
