@@ -1,0 +1,15 @@
+# Model weights — too large for git, downloaded separately
+models/
+
+# vLLM and torch caches
+thor-vllm-cache/
+*.cache/
+
+# Python artifacts
+__pycache__/
+*.pyc
+*.egg-info/
+
+# Temp quantization artifacts
+*.tmp
+*.safetensors.tmp
