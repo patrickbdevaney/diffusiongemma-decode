@@ -19,7 +19,8 @@ export DG_IMAGE=vllm/vllm-openai:gemma-aarch64-cu130   # aarch64 build for Thor
 # 4. Identify which turn types benefit from thinking=false
 ./thor-diffusiongemma/phase5-thinking-ablation.sh
 
-# 5. Expert FP4 quantization (the bandwidth lever — run after baseline; HIGH RISK, see below)
+# 5. Weight-quant headroom probe (reproduces: experts already FP4; attention is the only
+#    bf16 lever and has no tractable path — see REQUANT-ANALYSIS.md)
 ./thor-diffusiongemma/phase3-quantize-experts.sh
 ```
 
@@ -76,15 +77,17 @@ phase5 measures which turn types benefit.
 
 ## Optimizations implemented
 
-| Optimization | Script | Expected lift | Status |
+| Optimization | Script | Result (measured on Thor) | Status |
 |---|---|---|---|
-| TRITON_ATTN backend (required) | serve-diffusiongemma.sh | Correctness, not speed | Baked in |
-| Prefix caching (APC) | serve + phase4 | TTFT reduction on cached prefix | Enabled |
-| thinking=false per turn | phase5 | Wall-time on non-reasoning turns | Measure first |
-| FP8/FP4 expert quantization | phase3 | ~106→~140 tok/s (IF it works) | Quality-gated, HIGH RISK |
-| Max KV headroom (gpu_util 0.80) | serve | Long-context stability | Enabled |
+| TRITON_ATTN backend (required) | serve-diffusiongemma.sh | Correctness, not speed | ✅ baked in |
+| Prefix caching (APC) | serve + phase4 | Confirmed active — hit rate 17.6%→33.9% in logs | ✅ verified |
+| thinking=false per turn | phase5 | ~1.4s saved on short turns (nginx 2561→1097ms) | ✅ real lever |
+| Max KV headroom (gpu_util 0.80) | serve | Long-context stability | ✅ enabled |
+| ~~Expert FP4 quantization~~ | phase3 | **Premise wrong — experts already FP4** | ❌ see REQUANT-ANALYSIS.md |
 
-## What cannot be optimized
+Baseline single-stream (chat): short 50.7 / medium 105.7 / long 90.3 tok/s.
+
+## What cannot be optimized (verified)
 
 | Item | Why |
 |---|---|
@@ -92,16 +95,18 @@ phase5 measures which turn types benefit.
 | Canvas size | Not exposed in V2 model runner |
 | Fast-dLLM stacking | Already the native engine |
 | Concurrency aggregate | Not the target workload (single-stream is) |
+| **Expert requant** | **Experts are ALREADY NVFP4** (verified — `experts.*_proj.weight` are U8/FP4) |
+| **Attention requant** | Only bf16 weight + the real bottleneck, but no tractable path: W4A4 needs calibration (no loadable DiffusionGemma framework); W4A16 needs modelopt packing (won't install) + Marlin; plus diffusion quality risk NVIDIA already declined. See REQUANT-ANALYSIS.md |
 
-## ⚠️ Phase 3 risk note
+## Weight-quant headroom — the short version
 
-The NVFP4 checkpoint keeps MoE experts/attn in bf16. Requantizing them is the real
-bandwidth lever, BUT: DiffusionGemma is `DiffusionGemmaForBlockDiffusion`, not a
-`CausalLM`, so `AutoModelForCausalLM.from_pretrained` (what llm-compressor uses) may
-fail to load it, and reloading a packed-NVFP4 modelopt checkpoint for re-quant is
-itself fragile. Treat phase3 as exploratory — it is expected to need custom module
-targeting (inspect `named_modules()`), and quantization error compounds across the T
-denoising steps. Do not serve the result until the quality gate passes.
+The directive's "primary bandwidth lever" (requant the bf16 experts) does not exist: the
+experts are already FP4-cutlass-quantized. The only bf16 weights are attention (1.25 B) +
+norms/router/embeddings. Attention is actually the single-stream bottleneck (dense → ~88% of
+active bytes; experts are sparse), but FP4-ing it has no off-the-shelf path and real quality
+risk on the diffusion denoising trajectory. Full evidence + decision tree: **REQUANT-ANALYSIS.md**.
+The shipped checkpoint (FP4 experts + bf16 attention) is near the practical optimum; the real
+wins are serve-time (prefix caching, thinking=false, concurrency).
 
 ## Ports
 Production: 8004. Benchmark: 8005. FP4-experts comparison: 8006.

@@ -39,3 +39,11 @@ class); config has architectures=['DiffusionGemmaForBlockDiffusion'], auto_map=N
 weights. So requantizing experts requires a modelopt-based flow against the vLLM model definition
 (a research effort), not this llm-compressor script. Did NOT run the install/quant (would fail at load).
 Bandwidth lever remains open but out of reach with off-the-shelf tooling.
+
+## Requant investigation (2026-06-19)
+- Experts ALREADY NVFP4 (cutlass W4A4). Only 2.99B bf16: attention 1.25B + norms/router/embed.
+- Attention (dense) is the single-stream bottleneck, not experts (sparse 4/128). Directive had it backwards.
+- W4A16_NVFP4 config flip on existing checkpoint = NO-OP (~baseline tok/s): all FP4 is in FusedMoE
+  which selects backend independently (stayed VLLM_CUTLASS); no quantized Linear layers exist.
+- No tractable attention-requant path (W4A4 needs framework calibration; W4A16 needs modelopt packing
+  that won't install + Marlin) + diffusion quality risk. Full analysis: ../REQUANT-ANALYSIS.md.
