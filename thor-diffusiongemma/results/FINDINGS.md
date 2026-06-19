@@ -47,3 +47,12 @@ Bandwidth lever remains open but out of reach with off-the-shelf tooling.
   which selects backend independently (stayed VLLM_CUTLASS); no quantized Linear layers exist.
 - No tractable attention-requant path (W4A4 needs framework calibration; W4A16 needs modelopt packing
   that won't install + Marlin) + diffusion quality risk. Full analysis: ../REQUANT-ANALYSIS.md.
+
+## Quality + real-workload eval (quality-eval.py, 2026-06-19)
+- Output quality GOOD with thinking ON: code (fib/flatten/is_prime) executes correctly; factual
+  (391/Tokyo/strawberry=10/WWII=1945/$0.05) correct; tool-call get_weather(Paris) valid.
+- thinking=false LANDMINE: emits 1 token + stops (empty) on terse prompts -> phase5 lever RETRACTED.
+- Thinking token-hungry + not separated (gemma4 parser leaves reasoning_content empty, inline in content);
+  budget generous max_tokens; runaway thinking on some prompts ("is 2027 prime" never concludes in 1024 tok).
+- LONG-PREFIX prefix cache = the big agentic win: 6182-tok prefix, cold 5447ms vs warm 947-1135ms
+  = 79-83% wall reduction (~5x TTFT). Far bigger than any decode-rate tweak.

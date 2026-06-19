@@ -16,8 +16,11 @@ export DG_IMAGE=vllm/vllm-openai:gemma-aarch64-cu130   # aarch64 build for Thor
 # 3. Verify prefix caching works on diffusion path
 ./thor-diffusiongemma/phase4-prefix-cache-verify.sh
 
-# 4. Identify which turn types benefit from thinking=false
+# 4. Thinking ablation (NOTE: thinking=false is a quality landmine — see QUALITY-FINDINGS.md)
 ./thor-diffusiongemma/phase5-thinking-ablation.sh
+
+# 4b. Quality + long-prefix APC + tool-call/reasoning verification (the real eval)
+python3 ./thor-diffusiongemma/quality-eval.py 8004
 
 # 5. Weight-quant headroom probe (reproduces: experts already FP4; attention is the only
 #    bf16 lever and has no tractable path — see REQUANT-ANALYSIS.md)
@@ -67,11 +70,14 @@ vLLM blog states APC works out of the box (encoder commit-pass writes KV like AR
 phase4 verifies this empirically on this unit. For an agentic harness with a long
 shared system prompt + tool defs, APC removes prefill cost on every turn after the first.
 
-### Thinking mode
+### Thinking mode — keep it ON
 
-Per-request: `chat_template_kwargs: {enable_thinking: true/false}`. Thinking tokens
-consume canvas budget; `enable_thinking:false` avoids CoT on tool-call/short turns.
-phase5 measures which turn types benefit.
+Per-request: `chat_template_kwargs: {enable_thinking: true/false}`. **Leave it ON.**
+`enable_thinking:false` is a quality landmine: on terse prompts the model emits 1 token and
+stops (empty content). The earlier "thinking=false saves time on short turns" finding is
+**retracted** — it was partly the model producing nothing. Thinking is token-hungry and the
+gemma4 parser does NOT separate it into `reasoning_content` (lands inline), so budget generous
+`max_tokens` and watch for runaway thinking on hard analytic prompts. See QUALITY-FINDINGS.md.
 
 ---
 
@@ -80,8 +86,9 @@ phase5 measures which turn types benefit.
 | Optimization | Script | Result (measured on Thor) | Status |
 |---|---|---|---|
 | TRITON_ATTN backend (required) | serve-diffusiongemma.sh | Correctness, not speed | ✅ baked in |
-| Prefix caching (APC) | serve + phase4 | Confirmed active — hit rate 17.6%→33.9% in logs | ✅ verified |
-| thinking=false per turn | phase5 | ~1.4s saved on short turns (nginx 2561→1097ms) | ✅ real lever |
+| Prefix caching (APC) | serve + phase4 + quality-eval | **79–83% wall cut** on a 6182-tok prefix | ✅ the big agentic win |
+| ~~thinking=false per turn~~ | phase5 | **Retracted — produces empty output** on terse prompts | ❌ landmine, see QUALITY-FINDINGS.md |
+| Output quality (NVFP4 + thinking) | quality-eval.py | Code executes, factual/tool-calls correct | ✅ verified good |
 | Max KV headroom (gpu_util 0.80) | serve | Long-context stability | ✅ enabled |
 | ~~Expert FP4 quantization~~ | phase3 | **Premise wrong — experts already FP4** | ❌ see REQUANT-ANALYSIS.md |
 
