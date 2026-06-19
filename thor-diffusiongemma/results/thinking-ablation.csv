@@ -1,0 +1,9 @@
+label,prompt_prefix,wall_ms,completion_tok,reasoning_words
+thinking_false,List the files in /etc/nginx/,1097,59,0
+thinking_true,List the files in /etc/nginx/,2561,64,0
+thinking_false,What is 144 divided by 12?,602,14,0
+thinking_true,What is 144 divided by 12?,958,32,0
+thinking_false,Write a Python function to fla,2804,256,0
+thinking_true,Write a Python function to fla,2083,256,0
+thinking_false,Explain why TCP uses a three-w,2759,256,0
+thinking_true,Explain why TCP uses a three-w,2938,256,0

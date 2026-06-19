@@ -1,0 +1,5 @@
+label,thinking,max_tokens,avg_tok_s
+short,false,64,50.7
+medium,false,256,105.7
+long,false,768,90.3
+reasoning,true,512,115.8
