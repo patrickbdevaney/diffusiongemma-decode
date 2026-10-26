@@ -6,7 +6,7 @@
 set -euo pipefail
 PORT="${DG_PORT:-8004}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RESULTS_DIR="$REPO_ROOT/thor-diffusiongemma/results"
+RESULTS_DIR="$REPO_ROOT/results"
 mkdir -p "$RESULTS_DIR"
 
 echo "=== Phase 5: Thinking ablation (server :$PORT) ==="

@@ -13,3 +13,6 @@ __pycache__/
 # Temp quantization artifacts
 *.tmp
 *.safetensors.tmp
+
+# Generated runtime config
+config/

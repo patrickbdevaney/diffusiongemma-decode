@@ -1,6 +1,6 @@
 # DiffusionGemma-26B-A4B-NVFP4 — quality + real-workload findings (Thor, 2026-06-19)
 
-Run: `python3 quality-eval.py 8004`. These are the "is the output actually good, and does the
+Run: `python3 eval/quality-eval.py 8004`. These are the "is the output actually good, and does the
 agentic prefix-cache win materialize" answers that the speed benchmarks didn't address.
 
 ## Quality — the NVFP4 model is good WITH thinking on

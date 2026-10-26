@@ -11,7 +11,7 @@
 
 set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-RESULTS_DIR="$REPO_ROOT/thor-diffusiongemma/results"
+RESULTS_DIR="$REPO_ROOT/results"
 PORT="${DG_PORT:-8004}"
 RUNS="${DG_RUNS:-4}"
 mkdir -p "$RESULTS_DIR"

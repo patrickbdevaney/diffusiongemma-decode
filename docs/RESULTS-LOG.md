@@ -46,7 +46,7 @@ Bandwidth lever remains open but out of reach with off-the-shelf tooling.
 - W4A16_NVFP4 config flip on existing checkpoint = NO-OP (~baseline tok/s): all FP4 is in FusedMoE
   which selects backend independently (stayed VLLM_CUTLASS); no quantized Linear layers exist.
 - No tractable attention-requant path (W4A4 needs framework calibration; W4A16 needs modelopt packing
-  that won't install + Marlin) + diffusion quality risk. Full analysis: ../REQUANT-ANALYSIS.md.
+  that won't install + Marlin) + diffusion quality risk. Full analysis: [REQUANT-ANALYSIS.md](REQUANT-ANALYSIS.md).
 
 ## Quality + real-workload eval (quality-eval.py, 2026-06-19)
 - Output quality GOOD with thinking ON: code (fib/flatten/is_prime) executes correctly; factual

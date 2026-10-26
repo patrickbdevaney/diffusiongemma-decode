@@ -12,9 +12,9 @@ set -euo pipefail
 MODE="${1:-default}"
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODEL_DIR="${DG_MODEL:-$REPO_ROOT/models/DiffusionGemma-26B-A4B-NVFP4}"
-SCRIPT_DIR="$REPO_ROOT/thor-diffusiongemma"
-CONFIG_DIR="$SCRIPT_DIR/config"
-RESULTS_DIR="$SCRIPT_DIR/results"
+
+CONFIG_DIR="$REPO_ROOT/config"
+RESULTS_DIR="$REPO_ROOT/results"
 PORT="${DG_PORT:-8004}"
 CACHE_ROOT="$HOME/thor-vllm-cache/diffusiongemma"
 IMAGE="${DG_IMAGE:-vllm/vllm-openai:gemma-aarch64-cu130}"
